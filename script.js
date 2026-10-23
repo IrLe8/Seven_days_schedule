@@ -1,6 +1,6 @@
 // 1. Вставьте сюда базовую ссылку публикации ВАШЕГО ДОКУМЕНТА ЦЕЛИКОМ (формат CSV)
 // Замените блок ВАШ_ID_ТАБЛИЦЫ на реальные символы из вашей ссылки Google
-const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pubhtml"; 
+const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?output=csv"; 
 
 let allEvents = [];
 let currentDate = new Date(); // Хранит активный открытый месяц календаря
