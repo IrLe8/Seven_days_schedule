@@ -1,14 +1,39 @@
-// 1. Вставьте сюда базовую ссылку публикации ВАШЕГО ДОКУМЕНТА ЦЕЛИКОМ (формат CSV)
-// Замените блок ВАШ_ID_ТАБЛИЦЫ на реальные символы из вашей ссылки Google
 const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?output=csv"; 
 
 let allEvents = [];
-let currentDate = new Date(); // Хранит активный открытый месяц календаря
+let currentDate = new Date(); 
 
-// Функция очистки от технических кавычек Google Таблиц
 const clean = str => str ? str.replace(/^"|"$/g, '').trim() : '';
 
-// Функция скрытия и показа плашки-уведомления
+// Умная функция, которая превращает любой формат даты (с точками или дефисами) в стандарт YYYY-MM-DD
+function normalizeDate(rawDate) {
+  if (!rawDate) return '';
+  
+  // Если дата введена через точки (например, 28.10.2026)
+  if (rawDate.includes('.')) {
+    const parts = rawDate.split('.');
+    if (parts.length === 3) {
+      const day = parts[0].padStart(2, '0');
+      const month = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`; // возвращаем 2026-10-28
+    }
+  }
+  
+  // Если дата уже идет через дефисы (например, 2026-10-28)
+  if (rawDate.includes('-')) {
+    const parts = rawDate.split('-');
+    if (parts.length === 3) {
+      const year = parts[0];
+      const month = parts[1].padStart(2, '0');
+      const day = parts[2].padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+  }
+  
+  return rawDate;
+}
+
 function toggleStatusMessage(show, text = "") {
   const msgEl = document.getElementById('statusMessage');
   if (show) {
@@ -19,13 +44,11 @@ function toggleStatusMessage(show, text = "") {
   }
 }
 
-// Загрузка данных нужного листа из Google Таблицы
 async function fetchEvents() {
   const year = currentDate.getFullYear();
-  const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0'); // Всегда 2 знака ("01", "10")
-  const sheetName = `${monthStr}.${year}`; // Формируем имя нужной вкладки, например "10.2026"
+  const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0'); 
+  const sheetName = `${monthStr}.${year}`; 
 
-  // Ссылка, которая запрашивает у Google конкретную вкладку по имени
   const finalUrl = `${baseCsvUrl}gid=0&single=true&output=csv&sheet=${encodeURIComponent(sheetName)}`;
 
   try {
@@ -37,42 +60,44 @@ async function fetchEvents() {
     
     allEvents = [];
     
-    // Перебираем строки таблицы со второй строки (i = 1), пропуская шапку
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
       const cols = lines[i].split(',');
       if (cols.length >= 2) {
-        const title = clean(cols[0]); // Колонка A: Название / Тренер
-        const date = clean(cols[1]);  // Колонка B: Дата (YYYY-MM-DD)
-        const time = cols[2] ? clean(cols[2]) : ''; // Колонка C: Время (HH:MM)
+        const title = clean(cols[0]); 
+        const rawDate = clean(cols[1]);  
+        const time = cols[2] ? clean(cols[2]) : ''; 
+        
+        // Превращаем дату из таблицы в понятную для календаря
+        const validatedDate = normalizeDate(rawDate);
         
         allEvents.push({
-          title: time ? `[${time}] ${title}` : title, // Если время указано, прикрепляем к названию
-          start: date
+          title: time ? `[${time}] ${title}` : title, 
+          start: validatedDate,
+          time: time
         });
       }
     }
     
-    toggleStatusMessage(false); // Убираем сообщение об ошибке, если вкладка успешно прочитана
+    allEvents.sort((a, b) => a.time.localeCompare(b.time));
+    
+    toggleStatusMessage(false); 
     renderCalendar();
     
   } catch (e) {
-    console.warn(`Лист ${sheetName} не найден в таблице.`);
-    allEvents = []; // Очищаем массив, чтобы не показывать занятия прошлых месяцев
-    
-    // Показываем плашку-помощник для менеджеров
-    toggleStatusMessage(true, `Расписание на этот месяц еще не создано.`);
+    console.warn(`Лист ${sheetName} не найден или ошибка сети:`, e);
+    allEvents = []; 
+    toggleStatusMessage(true, "Расписания на этот месяц еще нет.");
     renderCalendar();
   }
 }
 
-// Построение сетки календаря
 function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
   const title = document.getElementById('monthTitle');
   
-  grid.innerHTML = ''; // Стираем старую сетку перед перерисовкой
+  grid.innerHTML = ''; 
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -83,28 +108,21 @@ function renderCalendar() {
   ];
   title.innerText = `${monthNames[month]} ${year}`;
 
-  // Выводим шапку дней недели
   const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
   weekDays.forEach(day => {
     grid.innerHTML += `<div class="day-name">${day}</div>`;
   });
 
-  // Расчет отступов пустых ячеек
   const firstDayIndex = new Date(year, month, 1).getDay(); 
-  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Корректируем под СНГ (Пн = 0)
+  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; 
   const totalDays = new Date(year, month + 1, 0).getDate(); 
 
-  // Выводим пустые карточки дней до старта месяца
   for (let i = 0; i < startOffset; i++) {
     grid.innerHTML += `<div class="day-cell empty"></div>`;
   }
 
-  // Начинаем выводить реальные числа месяца
   for (let day = 1; day <= totalDays; day++) {
-    // Собираем системную дату дня в формате YYYY-MM-DD
     const currentFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    
-    // Отбираем занятия из таблицы на этот день
     const dayEvents = allEvents.filter(e => e.start === currentFullDate);
     
     let eventsHTML = '';
@@ -121,16 +139,14 @@ function renderCalendar() {
   }
 }
 
-// Слушатели кликов по кнопкам навигации
 document.getElementById('prevBtn').addEventListener('click', () => {
   currentDate.setMonth(currentDate.getMonth() - 1);
-  fetchEvents(); // Запрашиваем новый CSV при переходе
+  fetchEvents(); 
 });
 
 document.getElementById('nextBtn').addEventListener('click', () => {
   currentDate.setMonth(currentDate.getMonth() + 1);
-  fetchEvents(); // Запрашиваем новый CSV при переходе
+  fetchEvents();
 });
 
-// Первичный автоматический запуск кода при загрузке сайта
 fetchEvents();
