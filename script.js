@@ -1,5 +1,5 @@
 // 1. Вставьте сюда вашу ссылку на CSV из Google Таблиц
-const csvUrl = "ССЫЛКА_НА_ВАШ_CSV_ФАЙЛ"; 
+const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?gid=590384500&single=true&output=csv"; 
 
 let allEvents = [];
 let currentDate = new Date(); // Хранит текущий просматриваемый месяц
