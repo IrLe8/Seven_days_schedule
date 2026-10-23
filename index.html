@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Расписание студии</title>
+    
+    <!-- Ссылки Cloudflare, которые на живом сайте сработают идеально -->
+    <link href="https://cloudflare.com" rel="stylesheet">
+    <script src="https://cloudflare.com"></script>
+    <script src="https://cloudflare.com"></script>
+
+    <style>
+        body { margin: 40px 10px; font-family: Arial, sans-serif; background-color: #f8f9fa; }
+        #calendar { max-width: 900px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body>
+
+    <h1 style="text-align: center; font-family: Arial, sans-serif; margin-bottom: 20px;">Расписание занятий</h1>
+    <div id="calendar"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var calendarEl = document.getElementById('calendar');
+            var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                locale: 'ru',
+                firstDay: 1,
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,listWeek'
+                },
+                googleCalendarApiKey: 'AIzaSyBF_4HY4_wC1FJfkTtyu6jpMlF2oi1OIiE',
+                events: {
+                    googleCalendarId: '5cb29c4a2e6438b642b682096204b2633ff0fb475096dce05329199276f9a523@://google.com'
+                },
+                eventClick: function(info) {
+                    info.jsEvent.preventDefault();
+                    alert('Занятие: ' + info.event.title + '\nОписание: ' + (info.event.extendedProps.description || 'нет описания'));
+                }
+            });
+            calendar.render();
+        });
+    </script>
+</body>
+</html>
