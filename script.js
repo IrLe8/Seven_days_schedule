@@ -1,41 +1,31 @@
-// Ваша публичная ссылка на CSV
-const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?gid=590384500&single=true&output=csv; 
+// 1. Вставьте сюда базовую ссылку публикации ВАШЕГО ДОКУМЕНТА ЦЕЛИКОМ (формат CSV)
+// Замените блок ВАШ_ID_ТАБЛИЦЫ на реальные символы из вашей ссылки Google
+const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?gid=590384500&single=true&output=csv"; 
 
-let calendar;
+let allEvents = [];
+let currentDate = new Date(); // Хранит активный открытый месяц календаря
+
+// Функция очистки от технических кавычек Google Таблиц
 const clean = str => str ? str.replace(/^"|"$/g, '').trim() : '';
 
-// Надежная функция нормализации даты
-function normalizeDate(rawDate) {
-  if (!rawDate) return '';
-  if (rawDate.includes('.')) {
-    const parts = rawDate.split('.');
-    if (parts.length === 3) {
-      return `${parts[2].trim()}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
-    }
-  }
-  if (rawDate.includes('-')) {
-    const parts = rawDate.split('-');
-    if (parts.length === 3) {
-      return `${parts[0].trim()}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-    }
-  }
-  return rawDate;
-}
-
+// Функция скрытия и показа плашки-уведомления
 function toggleStatusMessage(show, text = "") {
   const msgEl = document.getElementById('statusMessage');
-  if (msgEl) {
+  if (show) {
     msgEl.innerText = text;
-    msgEl.style.display = show ? 'block' : 'none';
+    msgEl.style.display = 'block';
+  } else {
+    msgEl.style.display = 'none';
   }
 }
 
-// Главная функция загрузки данных из вкладки месяца
-async function loadMonthEvents(date) {
-  const year = date.getFullYear();
-  const monthStr = String(date.getMonth() + 1).padStart(2, '0');
-  const sheetName = `${monthStr}.${year}`;
+// Загрузка данных нужного листа из Google Таблицы
+async function fetchEvents() {
+  const year = currentDate.getFullYear();
+  const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0'); // Всегда 2 знака ("01", "10")
+  const sheetName = `${monthStr}.${year}`; // Формируем имя нужной вкладки, например "10.2026"
 
+  // Ссылка, которая запрашивает у Google конкретную вкладку по имени
   const finalUrl = `${baseCsvUrl}gid=0&single=true&output=csv&sheet=${encodeURIComponent(sheetName)}`;
 
   try {
@@ -43,64 +33,104 @@ async function loadMonthEvents(date) {
     if (!response.ok) throw new Error("Лист не найден");
     
     const text = await response.text();
-    if (text.includes("<!DOCTYPE") || text.trim() === "") throw new Error("Неверный формат");
-
-    const lines = text.split(/\r?\n/);
-    const events = [];
-
+    const lines = text.split('\n');
+    
+    allEvents = [];
+    
+    // Перебираем строки таблицы со второй строки (i = 1), пропуская шапку
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
-      const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
       
+      const cols = lines[i].split(',');
       if (cols.length >= 2) {
-        const title = clean(cols[0]);
-        const rawDate = clean(cols[1]);
-        const time = cols[2] ? clean(cols[2]) : '';
+        const title = clean(cols[0]); // Колонка A: Название / Тренер
+        const date = clean(cols[1]);  // Колонка B: Дата (YYYY-MM-DD)
+        const time = cols[2] ? clean(cols[2]) : ''; // Колонка C: Время (HH:MM)
         
-        const validatedDate = normalizeDate(rawDate);
-        
-        events.push({
-          title: time ? `[${time}] ${title}` : title,
-          start: validatedDate,
-          allDay: time ? false : true, // Если времени нет, событие на весь день
-          rawTime: time
+        allEvents.push({
+          title: time ? `[${time}] ${title}` : title, // Если время указано, прикрепляем к названию
+          start: date
         });
       }
     }
-
-    // Сортировка событий по времени
-    events.sort((a, b) => a.rawTime.localeCompare(b.rawTime));
     
-    toggleStatusMessage(false);
-    return events;
-
+    toggleStatusMessage(false); // Убираем сообщение об ошибке, если вкладка успешно прочитана
+    renderCalendar();
+    
   } catch (e) {
-    console.warn(`Нет данных для листа ${sheetName}`);
-    toggleStatusMessage(true, "Расписания на этот месяц еще нет.");
-    return [];
+    console.warn(`Лист ${sheetName} не найден в таблице.`);
+    allEvents = []; // Очищаем массив, чтобы не показывать занятия прошлых месяцев
+    
+    // Показываем плашку-помощник для менеджеров
+    toggleStatusMessage(true, `Расписание на этот месяц еще не создано. Для вывода данных создайте вкладку с именем "${sheetName}" в Google Таблице.`);
+    renderCalendar();
   }
 }
 
-// Инициализация календаря при старте страницы
-document.addEventListener('DOMContentLoaded', function() {
-  const calendarEl = document.getElementById('calendar');
+// Построение сетки календаря
+function renderCalendar() {
+  const grid = document.getElementById('calendarGrid');
+  const title = document.getElementById('monthTitle');
   
-  calendar = new FullCalendar.Calendar(calendarEl, {
-    initialView: 'dayGridMonth',
-    locale: 'ru',      // Русский интерфейс
-    firstDay: 1,       // Неделя начинается с Понедельника
-    headerToolbar: {
-      left: 'prev,next today',
-      center: 'title',
-      right: ''        // Убираем лишние кнопки переключения видов
-    },
-    // Этот метод срабатывает автоматически при открытии сайта и смене месяцев кнопками
-    events: async function(fetchInfo, successCallback, failureCallback) {
-      const activeDate = calendar ? calendar.getDate() : new Date();
-      const currentEvents = await loadMonthEvents(activeDate);
-      successCallback(currentEvents);
-    }
+  grid.innerHTML = ''; // Стираем старую сетку перед перерисовкой
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const monthNames = [
+    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
+    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
+  ];
+  title.innerText = `${monthNames[month]} ${year}`;
+
+  // Выводим шапку дней недели
+  const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  weekDays.forEach(day => {
+    grid.innerHTML += `<div class="day-name">${day}</div>`;
   });
 
-  calendar.render();
+  // Расчет отступов пустых ячеек
+  const firstDayIndex = new Date(year, month, 1).getDay(); 
+  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Корректируем под СНГ (Пн = 0)
+  const totalDays = new Date(year, month + 1, 0).getDate(); 
+
+  // Выводим пустые карточки дней до старта месяца
+  for (let i = 0; i < startOffset; i++) {
+    grid.innerHTML += `<div class="day-cell empty"></div>`;
+  }
+
+  // Начинаем выводить реальные числа месяца
+  for (let day = 1; day <= totalDays; day++) {
+    // Собираем системную дату дня в формате YYYY-MM-DD
+    const currentFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    
+    // Отбираем занятия из таблицы на этот день
+    const dayEvents = allEvents.filter(e => e.start === currentFullDate);
+    
+    let eventsHTML = '';
+    dayEvents.forEach(ev => {
+      eventsHTML += `<div class="event-item" title="${ev.title}">${ev.title}</div>`;
+    });
+
+    grid.innerHTML += `
+      <div class="day-cell">
+        <div class="day-number">${day}</div>
+        <div class="event-list">${eventsHTML}</div>
+      </div>
+    `;
+  }
+}
+
+// Слушатели кликов по кнопкам навигации
+document.getElementById('prevBtn').addEventListener('click', () => {
+  currentDate.setMonth(currentDate.getMonth() - 1);
+  fetchEvents(); // Запрашиваем новый CSV при переходе
 });
+
+document.getElementById('nextBtn').addEventListener('click', () => {
+  currentDate.setMonth(currentDate.getMonth() + 1);
+  fetchEvents(); // Запрашиваем новый CSV при переходе
+});
+
+// Первичный автоматический запуск кода при загрузке сайта
+fetchEvents();
