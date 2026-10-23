@@ -1,4 +1,4 @@
-// Родная публичная ссылка на ваш документ в формате CSV
+// Базовая ссылка вашей публичной таблицы
 const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?"; 
 
 let allEvents = [];
@@ -6,7 +6,7 @@ let currentDate = new Date();
 
 const clean = str => str ? str.replace(/^"|"$/g, '').trim() : '';
 
-// Защищенная функция нормализации дат (обрабатывает и точки, и дефисы)
+// Функция нормализации дат (обрабатывает и точки, и дефисы)
 function normalizeDate(rawDate) {
   if (!rawDate) return '';
   
@@ -49,18 +49,19 @@ async function fetchEvents() {
     
     const text = await response.text();
     
-    // Если Google отдал ошибку или пустой HTML
-    if (text.includes("<!DOCTYPE") || text.trim() === "") {
+    // Защита от получения HTML-страницы вместо CSV
+    if (text.includes("<!DOCTYPE") || text.includes("<html") || text.trim() === "") {
       throw new Error("Неверный формат данных");
     }
     
-    const lines = text.split('\n');
+    // Безопасное разделение строк (работает и с \n, и с \r\n)
+    const lines = text.split(/\r?\n/);
     allEvents = [];
     
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
-      // Разбиваем строку CSV с учетом возможных кавычек
+      // Разбиваем строку CSV по запятым
       const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
       
       if (cols.length >= 2) {
