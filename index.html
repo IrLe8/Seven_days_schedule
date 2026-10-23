@@ -4,23 +4,21 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Календарь событий студии</title>
+  
+  <!-- Подключаем готовые стили и скрипты FullCalendar -->
+  <link href="https://jsdelivr.net" rel="stylesheet">
+  <script src="https://jsdelivr.net"></script>
+  
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <div class="calendar-container">
-    <div class="calendar-header">
-      <button id="prevBtn">← Прошлый</button>
-      <h2 id="monthTitle">Месяц Год</h2>
-      <button id="nextBtn">Следующий →</button>
-    </div>
-    
-    <!-- Место для вывода уведомления о создании нового листа таблицы -->
+    <!-- Место для уведомления, если расписания нет -->
     <div id="statusMessage" class="status-message"></div>
     
-    <div class="calendar-grid" id="calendarGrid">
-      <!-- Сетка дней генерируется автоматически через скрипт -->
-    </div>
+    <!-- Контейнер, в котором FullCalendar сам нарисует всё расписание -->
+    <div id="calendar"></div>
   </div>
 
   <script src="script.js"></script>
