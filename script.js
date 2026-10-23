@@ -1,5 +1,5 @@
 // Базовая ссылка вашей публичной таблицы
-const baseCsvUrl = "https://google.com?"; 
+const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?output=csv"; 
 
 let allEvents = [];
 let currentDate = new Date(); 
