@@ -1,103 +1,121 @@
-// 1. Вставьте сюда вашу ссылку на CSV из Google Таблиц
-const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?gid=590384500&single=true&output=csv"; 
-
-let allEvents = [];
-let currentDate = new Date(); // Хранит текущий просматриваемый месяц
-
-// Вспомогательная функция очистки текста от кавычек Google Таблиц
-const clean = str => str ? str.replace(/^"|"$/g, '').trim() : '';
-
-async function fetchEvents() {
-  try {
-    const response = await fetch(csvUrl);
-    const text = await response.text();
-    const lines = text.split('\n');
-    
-    allEvents = [];
-    
-    // Читаем строки, пропуская строку №1 с заголовками (title, start, end)
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
-      
-      const cols = lines[i].split(',');
-      if (cols.length >= 2) {
-        const rawStart = clean(cols[1]); // Получаем "2026-10-28 8:00"
-        
-        // Разделяем по ПРОБЕЛУ, чтобы забрать только дату YYYY-MM-DD
-        const datePart = rawStart.split(' ')[0]; 
-        
-        allEvents.push({
-          title: clean(cols[0]),
-          start: datePart 
-        });
-      }
-    }
-    renderCalendar();
-  } catch (e) {
-    console.error("Не удалось загрузить данные из таблицы:", e);
-    renderCalendar();
-  }
+body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f9;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  margin: 0;
 }
 
-function renderCalendar() {
-  const grid = document.getElementById('calendarGrid');
-  const title = document.getElementById('monthTitle');
-  
-  grid.innerHTML = ''; // Очищаем сетку
-
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
-
-  const monthNames = [
-    "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", 
-    "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"
-  ];
-  title.innerText = `${monthNames[month]} ${year}`;
-
-  const weekDays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-  weekDays.forEach(day => {
-    grid.innerHTML += `<div class="day-name">${day}</div>`;
-  });
-
-  const firstDayIndex = new Date(year, month, 1).getDay(); 
-  const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; 
-  const totalDays = new Date(year, month + 1, 0).getDate(); 
-
-  // Отрисовка дней прошлого месяца (пустые ячейки)
-  for (let i = 0; i < startOffset; i++) {
-    grid.innerHTML += `<div class="day-cell empty"></div>`;
-  }
-
-  // Отрисовка дней текущего месяца
-  for (let day = 1; day <= totalDays; day++) {
-    // Собираем дату в формате YYYY-MM-DD для сравнения (с ведущими нулями)
-    const currentFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-    
-    // Ищем события, у которых дата совпадает с днем календаря
-    const dayEvents = allEvents.filter(e => e.start === currentFullDate);
-    
-    let eventsHTML = '';
-    dayEvents.forEach(ev => {
-      eventsHTML += `<div class="event-item" title="${ev.title}">${ev.title}</div>`;
-    });
-
-    grid.innerHTML += `
-      <div class="day-cell">
-        <div class="day-number">${day}</div>
-        <div class="event-list">${eventsHTML}</div>
-      </div>
-    `;
-  }
+.calendar-container {
+  width: 100%;
+  max-width: 800px;
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
-document.getElementById('prevBtn').addEventListener('click', () => {
-  currentDate.setMonth(currentDate.getMonth() - 1);
-  renderCalendar();
-});
+/* Шапка с кнопками управления */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
 
-document.getElementById('nextBtn').addEventListener('click', () => {
-  currentDate.setMonth(currentDate.getMonth() + 1);
-  renderCalendar();
-});
+.calendar-header button {
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background 0.2s;
+}
 
-fetchEvents();
+.calendar-header button:hover {
+  background: #f0f0f0;
+}
+
+.calendar-header h2 {
+  margin: 0;
+  text-transform: capitalize;
+  font-size: 22px;
+  color: #333;
+}
+
+/* Сетка уведомлений для менеджеров */
+.status-message {
+  text-align: center;
+  font-size: 15px;
+  color: #666;
+  background: #f8f9fa;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border: 1px dashed #ccc;
+  display: none; /* Скрыта по умолчанию */
+}
+
+/* Сетка календаря на 7 колонок */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  background: #e0e0e0;
+  border: 1px solid #e0e0e0;
+}
+
+/* Заголовки дней недели (Пн, Вт...) */
+.day-name {
+  background: #f8f9fa;
+  padding: 10px;
+  text-align: center;
+  font-weight: bold;
+  font-size: 14px;
+  color: #555;
+}
+
+/* Ячейки индивидуальных дней */
+.day-cell {
+  background: white;
+  min-height: 100px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+/* Оформление пустых дней другого месяца */
+.day-cell.empty {
+  background: #fafafa;
+}
+
+.day-number {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #333;
+  font-size: 14px;
+}
+
+/* Список занятий внутри конкретного дня */
+.event-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+
+/* Оформление плашки конкретного занятия */
+.event-item {
+  background: #e3f2fd;
+  color: #0d47a1;
+  font-size: 12px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-left: 3px solid #1976d2;
+}
