@@ -1,4 +1,4 @@
-// Базовая ссылка вашей публичной таблицы
+// Родная публичная ссылка на ваш документ в формате CSV
 const baseCsvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?output=csv"; 
 
 let allEvents = [];
@@ -6,29 +6,21 @@ let currentDate = new Date();
 
 const clean = str => str ? str.replace(/^"|"$/g, '').trim() : '';
 
-// Исправленная функция нормализации дат
+// Защищенная функция нормализации дат (обрабатывает и точки, и дефисы)
 function normalizeDate(rawDate) {
   if (!rawDate) return '';
   
-  // Если дата введена через точки (например, 28.10.2026 или 1.11.2026)
   if (rawDate.includes('.')) {
     const parts = rawDate.split('.');
     if (parts.length === 3) {
-      const day = parts[0].padStart(2, '0');   // Первый элемент - день
-      const month = parts[1].padStart(2, '0'); // Второй элемент - месяц
-      const year = parts[2];                   // Третий элемент - год
-      return `${year}-${month}-${day}`;
+      return `${parts[2].trim()}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
     }
   }
   
-  // Если дата идет через дефисы (например, 2026-10-28)
   if (rawDate.includes('-')) {
     const parts = rawDate.split('-');
     if (parts.length === 3) {
-      const year = parts[0];
-      const month = parts[1].padStart(2, '0');
-      const day = parts[2].padStart(2, '0');
-      return `${year}-${month}-${day}`;
+      return `${parts[0].trim()}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
     }
   }
   
@@ -37,11 +29,9 @@ function normalizeDate(rawDate) {
 
 function toggleStatusMessage(show, text = "") {
   const msgEl = document.getElementById('statusMessage');
-  if (show) {
+  if (msgEl) {
     msgEl.innerText = text;
-    msgEl.style.display = 'block';
-  } else {
-    msgEl.style.display = 'none';
+    msgEl.style.display = show ? 'block' : 'none';
   }
 }
 
@@ -50,6 +40,7 @@ async function fetchEvents() {
   const monthStr = String(currentDate.getMonth() + 1).padStart(2, '0'); 
   const sheetName = `${monthStr}.${year}`; 
 
+  // Запрос к публичному CSV с указанием конкретного листа
   const finalUrl = `${baseCsvUrl}gid=0&single=true&output=csv&sheet=${encodeURIComponent(sheetName)}`;
 
   try {
@@ -57,14 +48,21 @@ async function fetchEvents() {
     if (!response.ok) throw new Error("Лист не найден");
     
     const text = await response.text();
-    const lines = text.split('\n');
     
+    // Если Google отдал ошибку или пустой HTML
+    if (text.includes("<!DOCTYPE") || text.trim() === "") {
+      throw new Error("Неверный формат данных");
+    }
+    
+    const lines = text.split('\n');
     allEvents = [];
     
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
-      const cols = lines[i].split(',');
+      // Разбиваем строку CSV с учетом возможных кавычек
+      const cols = lines[i].split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+      
       if (cols.length >= 2) {
         const title = clean(cols[0]); 
         const rawDate = clean(cols[1]);  
@@ -80,13 +78,14 @@ async function fetchEvents() {
       }
     }
     
+    // Сортировка по времени внутри дня
     allEvents.sort((a, b) => a.time.localeCompare(b.time));
     
     toggleStatusMessage(false); 
     renderCalendar();
     
   } catch (e) {
-    console.warn(`Лист ${sheetName} не найден:`, e);
+    console.warn(`Не удалось загрузить расписание для листа ${sheetName}:`, e);
     allEvents = []; 
     toggleStatusMessage(true, "Расписания на этот месяц еще нет.");
     renderCalendar();
@@ -97,6 +96,7 @@ function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
   const title = document.getElementById('monthTitle');
   
+  if (!grid || !title) return;
   grid.innerHTML = ''; 
 
   const year = currentDate.getFullYear();
