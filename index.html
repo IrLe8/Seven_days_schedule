@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Календарь событий</title>
-  <!-- Подключаем внешние стили CSS -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -16,12 +15,14 @@
       <button id="nextBtn">Следующий →</button>
     </div>
     
+    <!-- Сюда код будет выводить уведомления -->
+    <div id="statusMessage" class="status-message"></div>
+    
     <div class="calendar-grid" id="calendarGrid">
       <!-- Сетка сгенерируется через script.js -->
     </div>
   </div>
 
-  <!-- Подключаем логику JavaScript в самом конце body -->
   <script src="script.js"></script>
 </body>
 </html>
