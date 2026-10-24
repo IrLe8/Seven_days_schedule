@@ -117,29 +117,3 @@ body {
   color: #c62828;
   border-left: 3px solid #d32f2f;
 }
-
-/* Сообщение об отсутствии расписания (растягивается на все 7 колонок сетки) */
-.no-schedule-message {
-  grid-column: span 7;
-  text-align: center;
-  padding: 40px 20px;
-  background: #fffde7;
-  color: #f57f17;
-  font-size: 16px;
-  font-weight: bold;
-  border: 1px dashed #fbc02d;
-  border-radius: 8px;
-  margin-top: 10px;
-}
-
-.calendar-notification {
-  display: none;
-  background: #fff3cd;
-  color: #856404;
-  border: 1px solid #ffeeba;
-  padding: 15px;
-  border-radius: 8px;
-  text-align: center;
-  margin-bottom: 20px;
-  font-weight: bold;
-}
