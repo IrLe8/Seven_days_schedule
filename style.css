@@ -16,7 +16,7 @@ body {
   box-shadow: 0 4px 15px rgba(0,0,0,0.05);
 }
 
-/* Шапка с кнопками управления */
+/* Шапка календаря с кнопками управления */
 .calendar-header {
   display: flex;
   justify-content: space-between;
@@ -45,20 +45,7 @@ body {
   color: #333;
 }
 
-/* Сетка уведомлений для менеджеров */
-.status-message {
-  text-align: center;
-  font-size: 15px;
-  color: #666;
-  background: #f8f9fa;
-  padding: 12px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  border: 1px dashed #ccc;
-  display: none; /* Скрыта по умолчанию */
-}
-
-/* Сетка календаря на 7 колонок */
+/* Основная сетка (7 колонок на дни недели) */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -67,7 +54,7 @@ body {
   border: 1px solid #e0e0e0;
 }
 
-/* Заголовки дней недели (Пн, Вт...) */
+/* Ячейки заголовков (Пн, Вт...) */
 .day-name {
   background: #f8f9fa;
   padding: 10px;
@@ -77,7 +64,7 @@ body {
   color: #555;
 }
 
-/* Ячейки индивидуальных дней */
+/* Индивидуальные ячейки дней */
 .day-cell {
   background: white;
   min-height: 100px;
@@ -87,7 +74,7 @@ body {
   justify-content: flex-start;
 }
 
-/* Оформление пустых дней другого месяца */
+/* Дни, которые относятся к прошлому или следующему месяцу */
 .day-cell.empty {
   background: #fafafa;
 }
@@ -99,7 +86,7 @@ body {
   font-size: 14px;
 }
 
-/* Список занятий внутри конкретного дня */
+/* Контейнер списка событий */
 .event-list {
   display: flex;
   flex-direction: column;
@@ -107,7 +94,7 @@ body {
   overflow: hidden;
 }
 
-/* Оформление плашки конкретного занятия */
+/* Плашка конкретного события */
 .event-item {
   background: #e3f2fd;
   color: #0d47a1;
