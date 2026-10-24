@@ -4,24 +4,27 @@ const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7D
 let allEvents = [];
 let currentDate = new Date(); // Хранит текущий просматриваемый месяц
 
-// Вспомогательная функция очистки текста от кавычек Google Таблиц
-const clean = str => str ? str.replace(/^"|"$/g, '').trim() : '';
+// Вспомогательная функция очистки текста от кавычек Google Таблиц и невидимых символов \r
+const clean = str => str ? str.replace(/^"|"$/g, '').replace(/\r/g, '').trim() : '';
 
 async function fetchEvents() {
   try {
     const response = await fetch(csvUrl);
     const text = await response.text();
+    
+    // Делим строки с учетом возможных символов \r\n
     const lines = text.split('\n');
     
     allEvents = [];
     
     // Читаем строки, пропуская строку №1 с заголовками (title, start, end)
     for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
+      const currentLine = lines[i].trim();
+      if (!currentLine) continue;
       
-      const cols = lines[i].split(',');
+      const cols = currentLine.split(',');
       if (cols.length >= 2) {
-        const rawStart = clean(cols[1]); // Получаем "2026-10-28 8:00"
+        const rawStart = clean(cols[1]); // Получаем чистую строку, например "2026-10-28 8:00"
         
         // Разделяем по ПРОБЕЛУ, чтобы забрать только дату YYYY-MM-DD
         const datePart = rawStart.split(' ')[0]; 
@@ -42,6 +45,8 @@ async function fetchEvents() {
 function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
   const title = document.getElementById('monthTitle');
+  
+  if (!grid || !title) return; // Защита от ошибок, если элементы еще не созданы
   
   grid.innerHTML = ''; // Очищаем сетку
 
@@ -90,14 +95,24 @@ function renderCalendar() {
   }
 }
 
-document.getElementById('prevBtn').addEventListener('click', () => {
-  currentDate.setMonth(currentDate.getMonth() - 1);
-  renderCalendar();
-});
+// Навешиваем события только после проверки существования элементов в DOM
+document.addEventListener('DOMContentLoaded', () => {
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
 
-document.getElementById('nextBtn').addEventListener('click', () => {
-  currentDate.setMonth(currentDate.getMonth() + 1);
-  renderCalendar();
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() - 1);
+      renderCalendar();
+    });
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      renderCalendar();
+    });
+  }
 });
 
 fetchEvents();
