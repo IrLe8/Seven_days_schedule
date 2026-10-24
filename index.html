@@ -9,19 +9,20 @@
 </head>
 <body>
 
-  <div class="calendar-container">
-    <div class="calendar-header">
-      <button id="prevBtn">← Прошлый</button>
-      <h2 id="monthTitle">Месяц Год</h2>
-      <button id="nextBtn">Следующий →</button>
-    </div>
-    
-    <div class="calendar-grid" id="calendarGrid">
-      <!-- Сетка сгенерируется через script.js -->
-    </div>
+<div class="calendar-container">
+  <div class="calendar-header">
+    <button id="prevBtn">← Прошлый</button>
+    <h2 id="monthTitle">Месяц Год</h2>
+    <button id="nextBtn">Следующий →</button>
   </div>
+  
+  <!-- Сюда скрипт выведет сообщение, если листа для месяца нет -->
+  <div id="calendarNotification" class="calendar-notification"></div>
+  
+  <div class="calendar-grid" id="calendarGrid">
+    <!-- Сетка сгенерируется через script.js -->
+  </div>
+</div>
 
-  <!-- Подключаем логику JavaScript в самом конце body -->
-  <script src="script.js"></script>
 </body>
 </html>
