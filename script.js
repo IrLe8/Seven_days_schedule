@@ -9,7 +9,8 @@ const clean = str => str ? str.replace(/^"|"$/g, '').replace(/\r/g, '').trim() :
 
 async function fetchEvents() {
   try {
-    const response = await fetch(csvUrl);
+    // Добавляем к ссылке случайный параметр против жесткого кэширования браузером
+    const response = await fetch(`${csvUrl}&_cb=${Date.now()}`);
     const text = await response.text();
     
     // Делим строки с учетом возможных символов \r\n
@@ -17,21 +18,32 @@ async function fetchEvents() {
     
     allEvents = [];
     
-    // Читаем строки, пропуская строку №1 с заголовками (title, start, end)
+    // Читаем строки, пропуская строку №1 с заголовками (title, type, start, end)
     for (let i = 1; i < lines.length; i++) {
       const currentLine = lines[i].trim();
       if (!currentLine) continue;
       
       const cols = currentLine.split(',');
-      if (cols.length >= 2) {
-        const rawStart = clean(cols[1]); // Получаем чистую строку, например "2026-10-28 8:00"
+      
+      // Проверяем, что в строке есть хотя бы название и дата (теперь дата сместилась в cols[2])
+      if (cols.length >= 3) {
+        const titleText = clean(cols[0]);
+        const typeText = clean(cols[1]).toLowerCase(); // Переводим в нижний регистр для надежности проверки
+        const rawStart = clean(cols[2]); 
+        
+        // Если названия нет (как в строке 2 на вашем скриншоте) — просто пропускаем эту строку
+        if (!titleText) continue;
         
         // Разделяем по ПРОБЕЛУ, чтобы забрать только дату YYYY-MM-DD
         const datePart = rawStart.split(' ')[0]; 
         
+        // Проверяем тип события для окрашивания
+        const isRent = typeText === 'аренда';
+        
         allEvents.push({
-          title: clean(cols[0]),
-          start: datePart 
+          title: titleText,
+          start: datePart,
+          isRent: isRent // Сохраняем признак аренды (true или false)
         });
       }
     }
@@ -83,7 +95,17 @@ function renderCalendar() {
     
     let eventsHTML = '';
     dayEvents.forEach(ev => {
-      eventsHTML += `<div class="event-item" title="${ev.title}">${ev.title}</div>`;
+      // Определяем цвет плашки и текста в зависимости от статуса аренды
+      let badgeStyle = '';
+      if (ev.isRent) {
+        // Красный стиль для аренды
+        badgeStyle = 'background: #ffebee; color: #c62828; border-left: 3px solid #d32f2f;';
+      } else {
+        // Фиолетовый стиль для пустых ячеек
+        badgeStyle = 'background: #f3e5f5; color: #4a148c; border-left: 3px solid #7b1fa2;';
+      }
+
+      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.title}">${ev.title}</div>`;
     });
 
     grid.innerHTML += `
