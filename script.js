@@ -25,25 +25,34 @@ async function fetchEvents() {
       
       const cols = currentLine.split(',');
       
-      // Проверяем, что в строке есть хотя бы название и дата (теперь дата сместилась в cols[2])
+      // Проверяем, что в строке есть хотя бы название и дата
       if (cols.length >= 3) {
         const titleText = clean(cols[0]);
         const typeText = clean(cols[1]).toLowerCase(); // Переводим в нижний регистр для надежности проверки
-        const rawStart = clean(cols[2]); 
+        const rawStart = clean(cols[2]); // Получаем строку, например "2026-10-28 8:00" или "2026-10-28 14:30"
         
-        // Если названия нет (как в строке 2 на вашем скриншоте) — просто пропускаем эту строку
+        // Если названия нет — просто пропускаем эту строку
         if (!titleText) continue;
         
-        // Разделяем по ПРОБЕЛУ, чтобы забрать только дату YYYY-MM-DD
-        const datePart = rawStart.split(' ')[0]; 
+        // Разделяем по ПРОБЕЛУ на составляющие: дату и время
+        const dateTimeParts = rawStart.split(' ');
+        const datePart = dateTimeParts[0]; // YYYY-MM-DD
+        let timePart = dateTimeParts[1] || '00:00'; // HH:MM
+        
+        // Приводим время к красивому формату "08:00" вместо "8:00", чтобы сортировка работала корректно
+        if (timePart && timePart.includes(':')) {
+          const [hours, minutes] = timePart.split(':');
+          timePart = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        }
         
         // Проверяем тип события для окрашивания
         const isRent = typeText === 'аренда';
         
         allEvents.push({
           title: titleText,
-          start: datePart,
-          isRent: isRent // Сохраняем признак аренды (true или false)
+          start: datePart, // Для фильтрации по дням
+          time: timePart,  // Для сортировки по времени внутри дня
+          isRent: isRent
         });
       }
     }
@@ -90,8 +99,10 @@ function renderCalendar() {
     // Собираем дату в формате YYYY-MM-DD для сравнения (с ведущими нулями)
     const currentFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    // Ищем события, у которых дата совпадает с днем календаря
-    const dayEvents = allEvents.filter(e => e.start === currentFullDate);
+    // Ищем события, у которых дата совпадает с днем календаря, и СОРТИРУЕМ их по времени
+    const dayEvents = allEvents
+      .filter(e => e.start === currentFullDate)
+      .sort((a, b) => a.time.localeCompare(b.time)); // Сортировка от раннего к позднему
     
     let eventsHTML = '';
     dayEvents.forEach(ev => {
@@ -105,7 +116,10 @@ function renderCalendar() {
         badgeStyle = 'background: #f3e5f5; color: #4a148c; border-left: 3px solid #7b1fa2;';
       }
 
-      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.title}">${ev.title}</div>`;
+      // Выводим время и название события на плашке
+      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.time} ${ev.title}">
+        <strong>${ev.time}</strong> ${ev.title}
+      </div>`;
     });
 
     grid.innerHTML += `
