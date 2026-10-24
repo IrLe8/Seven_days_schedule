@@ -2,27 +2,79 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Календарь событий студии</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Наш Календарь</title>
+  
+  <!-- Подключаем стили и скрипты FullCalendar -->
+  <link href="https://jsdelivr.net" rel="stylesheet">
+  <script src="https://jsdelivr.net"></script>
+  
+  <style>
+    body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f4f9; }
+    #calendar { max-width: 900px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+  </style>
 </head>
 <body>
 
-  <div class="calendar-container">
-    <div class="calendar-header">
-      <button id="prevBtn">← Прошлый</button>
-      <h2 id="monthTitle">Месяц Год</h2>
-      <button id="nextBtn">Следующий →</button>
-    </div>
-    
-    <!-- Место для вывода уведомления о создании нового листа таблицы -->
-    <div id="statusMessage" class="status-message"></div>
-    
-    <div class="calendar-grid" id="calendarGrid">
-      <!-- Сетка дней генерируется автоматически через скрипт -->
-    </div>
-  </div>
+  <div id="calendar"></div>
 
-  <script src="script.js"></script>
+  <script>
+    // 1. Вставьте сюда вашу ссылку на CSV из Google Таблиц
+    const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?gid=590384500&single=true&output=csv";
+
+    // Функция для простой очистки кавычек из CSV-текста
+    const cleanStr = str => str ? str.replace(/^"|"$/g, '').trim() : '';
+
+    // Функция загрузки и разбора CSV
+    async function loadEventsFromCSV() {
+      try {
+        const response = await fetch(csvUrl);
+        const data = await response.text();
+        
+        // Разрезаем текст на строки
+        const lines = data.split('\n');
+        const events = [];
+
+        // Пропускаем первую строку с заголовками (i = 1)
+        for (let i = 1; i < lines.length; i++) {
+          if (!lines[i]) continue;
+          
+          // Разделяем строку по запятым
+          const columns = lines[i].split(',');
+          
+          if (columns.length >= 2) {
+            events.push({
+              title: cleanStr(columns[0]), // Название события
+              start: cleanStr(columns[1]), // Дата начала
+              end: cleanStr(columns[2])    // Дата окончания (опционально)
+            });
+          }
+        }
+        return events;
+      } catch (error) {
+        console.error("Ошибка при загрузке таблицы:", error);
+        return [];
+      }
+    }
+
+    // Инициализация календаря на странице
+    document.addEventListener('DOMContentLoaded', async function() {
+      const calendarEl = document.getElementById('calendar');
+      const eventsData = await loadEventsFromCSV();
+
+      const calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        locale: 'ru', // Русский язык интерфейса
+        firstDay: 1,  // Неделя начинается с понедельника
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek'
+        },
+        events: eventsData // Передаем наши события из таблицы
+      });
+
+      calendar.render();
+    });
+  </script>
 </body>
 </html>
