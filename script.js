@@ -131,19 +131,20 @@ function openEventModal(eventId) {
   const event = allEvents.find(e => e.id === eventId);
   if (!event) return;
 
-  // Красиво переворачиваем дату обратно для показа пользователю (из YYYY-MM-DD в ДД.ММ.ГГГГ)
+  // Переворачиваем дату обратно для показа (из YYYY-MM-DD в ДД.ММ.ГГГГ)
   const [year, month, day] = event.start.split('-');
   const humanDate = `${day}.${month}.${year}`;
 
   // Подставляем данные в окошко
   document.getElementById('modalTitle').innerText = event.title;
   document.getElementById('modalDate').innerText = humanDate;
-  document.getElementById('modalStart').innerText = event.time;
-  document.getElementById('modalEnd').innerText = event.endTime;
+  
+  // Формируем красивую строку времени "08:00 - 10:00"
+  document.getElementById('modalTimeRange').innerText = `${event.time} - ${event.endTime}`;
 
-  // Показываем окно с флекс-выравниванием
+  // Показываем окно
   const modal = document.getElementById('eventModal');
-  modal.style.display = 'block';
+  modal.style.display = 'block'; 
 }
 
 document.addEventListener('DOMContentLoaded', () => {
