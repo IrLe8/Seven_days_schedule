@@ -7,7 +7,7 @@ let currentDate = new Date(); // Хранит текущий просматри�
 // Вспомогательная функция очистки текста от кавычек Google Таблиц и невидимых символов \r
 const clean = str => str ? str.replace(/^"|"$/g, '').replace(/\r/g, '').trim() : '';
 
-// Функция приведения времени "8:00" -> "08:00"
+// Функция приведения времени "8:00" -> "08:00" для корректной сортировки
 const formatTime = timeStr => {
   if (!timeStr || !timeStr.includes(':')) return '00:00';
   const [hours, minutes] = timeStr.split(':');
@@ -29,7 +29,7 @@ async function fetchEvents() {
       
       const cols = currentLine.split(',');
       
-      // Теперь у нас 5 колонок (индексы 0, 1, 2, 3, 4)
+      // Читаем все 5 колонок таблицы
       if (cols.length >= 5) {
         const titleText = clean(cols[0]);
         const typeText = clean(cols[1]).toLowerCase();
@@ -39,15 +39,15 @@ async function fetchEvents() {
         
         if (!titleText || !rawDate) continue;
         
-        // Преобразуем дату из "8.10.2026" в "2026-10-08" для корректной фильтрации в календаре
+        // Преобразуем дату из "8.10.2026" в "2026-10-08" для календаря
         const dateParts = rawDate.split('.');
         if (dateParts.length !== 3) continue;
         const day = dateParts[0].padStart(2, '0');
         const month = dateParts[1].padStart(2, '0');
         const year = dateParts[2];
-        const formattedDate = `${year}-${month}-${day}`; // Получаем "2026-10-08"
+        const formattedDate = `${year}-${month}-${day}`;
         
-        // Форматируем время начала и конца (добавляем ведущие нули)
+        // Стандартизируем время (добавляем нули), чтобы сортировка работала идеально
         const startTime = formatTime(rawStart);
         const endTime = formatTime(rawEnd);
         
@@ -56,8 +56,8 @@ async function fetchEvents() {
         allEvents.push({
           title: titleText,
           start: formattedDate, 
-          time: startTime,      // Для сортировки и вывода
-          endTime: endTime,     // Для вывода красивого диапазона
+          time: startTime,      // Время начала (сохранено в памяти)
+          endTime: endTime,     // Время конца (сохранено в памяти)
           isRent: isRent
         });
       }
@@ -101,6 +101,7 @@ function renderCalendar() {
   for (let day = 1; day <= totalDays; day++) {
     const currentFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
+    // Фильтруем события по дате и СОРТИРУЕМ по времени начала, чтобы они шли по порядку
     const dayEvents = allEvents
       .filter(e => e.start === currentFullDate)
       .sort((a, b) => a.time.localeCompare(b.time)); 
@@ -114,11 +115,10 @@ function renderCalendar() {
         badgeStyle = 'background: #f3e5f5; color: #4a148c; border-left: 3px solid #7b1fa2;';
       }
 
-      // Формируем текст времени в формате "08:00-10:00"
-      const timeRange = `${ev.time}-${ev.endTime}`;
-
-      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${timeRange} ${ev.title}">
-        <strong>${timeRange}</strong> ${ev.title}
+      // Выводим ТОЛЬКО название. Время сохранено внутри объекта ev, но здесь не пишется.
+      // При наведении мышки (в title) время всё же покажется всплывашкой — это удобно для проверки.
+      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.time}-${ev.endTime} ${ev.title}">
+        ${ev.title}
       </div>`;
     });
 
