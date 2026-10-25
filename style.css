@@ -14,7 +14,6 @@ body {
 /* Контейнер календаря, который теперь плавно подстраивается под высоту экрана */
 .calendar-container {
   width: 100%;
-  max-width: 1000px; /* Немного расширил, чтобы на ПК ячейки были просторнее */
   background: white;
   padding: 20px;
   border-radius: 12px;
