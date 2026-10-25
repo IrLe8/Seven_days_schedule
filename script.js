@@ -143,7 +143,7 @@ function openEventModal(eventId) {
 
   // Показываем окно с флекс-выравниванием
   const modal = document.getElementById('eventModal');
-  modal.style.display = 'flex';
+  modal.style.display = 'block';
 }
 
 document.addEventListener('DOMContentLoaded', () => {
