@@ -1,107 +1,223 @@
-/* Базовые настройки для всего экрана, чтобы календарь занимал всю высоту */
+/* Базовые настройки для всего экрана */
 body {
+  font-family: Arial, sans-serif;
+  background: #f4f6f9;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-height: 100vh;
+  padding: 20px;
   margin: 0;
-  padding: 10px;
   box-sizing: border-box;
-  height: 100vh;
+}
+
+/* Контейнер календаря, который теперь плавно подстраивается под высоту экрана */
+.calendar-container {
+  width: 100%;
+  max-width: 1000px; /* Немного расширил, чтобы на ПК ячейки были просторнее */
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
   display: flex;
   flex-direction: column;
-  font-family: sans-serif;
-  overflow: hidden; /* Запрещаем общую прокрутку страницы */
+  box-sizing: border-box;
 }
 
-/* Шапка с названием месяца и кнопками */
-#monthTitle {
-  text-align: center;
-  margin: 10px 0;
-  font-size: calc(16px + 1vw); /* Размер шрифта подстраивается под экран */
+/* Шапка календаря с кнопками управления */
+.calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-/* Сетка календаря: подстраивается под высоту и ширину экрана */
-#calendarGrid {
+.calendar-header button {
+  padding: 8px 16px;
+  cursor: pointer;
+  border: 1px solid #ccc;
+  background: white;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.calendar-header button:hover {
+  background: #f0f0f0;
+}
+
+.calendar-header h2 {
+  margin: 0;
+  text-transform: capitalize;
+  font-size: calc(18px + 0.5vw); /* Адаптивный размер шрифта шапки */
+  color: #333;
+}
+
+/* ИСПРАВЛЕНО: Сетка теперь не ломает пропорции ячеек */
+.calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  /* Автоматически распределяет оставшуюся высоту экрана между строками */
-  grid-template-rows: auto repeat(5, 1fr); 
+  /* Каждая строчка будет не меньше 80px и не больше 13% высоты экрана */
+  grid-auto-rows: minmax(80px, 13vh); 
   gap: 4px;
-  flex-grow: 1; /* Растягивает сетку на весь экран */
-  width: 100%;
-  height: calc(100vh - 120px); /* Высота за вычетом шапки */
-}
-
-/* Названия дней недели (Пн, Вт...) */
-.day-name {
-  text-align: center;
-  font-weight: bold;
-  font-size: calc(12px + 0.5vw);
-  padding: 4px 0;
-  background-color: #f5f5f5;
-  border-radius: 4px;
-}
-
-/* Сама ячейка дня */
-.day-cell {
-  background: #fafafa;
+  background: #e0e0e0;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  padding: 4px;
-  display: flex;
-  flex-direction: column;
-  min-width: 0; /* Важно для работы многоточия внутри Grid */
-  overflow: hidden; /* Чтобы контент не вылезал за границы ячейки */
-  position: relative;
+  overflow: hidden;
 }
 
-/* Пустые ячейки прошлых/будущих месяцев */
-.day-cell.empty {
-  background: #f0f0f0;
-  border: 1px dashed #d0d0d0;
-}
-
-/* Номер дня внутри ячейки */
-.day-number {
-  font-size: calc(10px + 0.5vw);
+/* Ячейки заголовков (Пн, Вт...) */
+.day-name {
+  background: #f8f9fa;
+  padding: 10px 4px;
+  text-align: center;
   font-weight: bold;
-  margin-bottom: 2px;
+  font-size: calc(11px + 0.3vw);
   color: #555;
 }
 
-/* Контейнер для списка занятий внутри дня */
+/* ИСПРАВЛЕНО: Индивидуальные ячейки дней */
+.day-cell {
+  background: white;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-width: 0; /* Защита от распирания ячейки длинным текстом */
+  overflow: hidden;
+  position: relative;
+}
+
+/* Дни, которые относятся к прошлому или следующему месяцу */
+.day-cell.empty {
+  background: #fafafa;
+}
+
+.day-number {
+  font-weight: bold;
+  margin-bottom: 6px;
+  color: #333;
+  font-size: calc(11px + 0.3vw);
+}
+
+/* Контейнер списка событий с внутренним скроллом, если занятий слишком много */
 .event-list {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
   flex-grow: 1;
-  overflow-y: auto; /* Если занятий слишком много, внутри ячейки появится аккуратный скролл */
+  overflow-y: auto;
 }
 
-/* Стили самой плашки занятия с МНОГОТОЧИЕМ */
+/* Базовый класс плашки события с МНОГОТОЧИЕМ */
 .event-item {
-  font-size: calc(10px + 0.3vw); /* Шрифт уменьшается на телефонах */
-  padding: 3px 6px;
+  font-size: calc(10px + 0.2vw); /* Шрифт красиво уменьшается на мобильных */
+  padding: 4px 6px;
   border-radius: 4px;
-  margin-bottom: 1px;
-  
-  /* Магия многоточия: */
-  white-space: nowrap; /* Запрещаем перенос текста на новую строку */
-  overflow: hidden; /* Прячем то, что не поместилось */
-  text-overflow: ellipsis; /* Добавляем три точки (...) в конце */
-  
-  width: 100%;
+  cursor: pointer;
   box-sizing: border-box;
+  width: 100%;
+  
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* Адаптивность для совсем маленьких экранов (телефоны вертикально) */
+/* Фиолетовый стиль для обычных событий */
+.event-item.event-purple {
+  background: #f3e5f5;
+  color: #4a148c;
+  border-left: 3px solid #7b1fa2;
+}
+
+/* Красный стиль для аренды */
+.event-item.event-red {
+  background: #ffebee;
+  color: #c62828;
+  border-left: 3px solid #d32f2f;
+}
+
+/* ИСПРАВЛЕНО: Модальное окно теперь намертво зафиксировано на экране */
+.modal {
+  display: none; 
+  position: fixed; 
+  z-index: 9999; /* Поверх всех элементов */
+  left: 0;
+  top: 0;
+  width: 100%; 
+  height: 100%; 
+  background-color: rgba(0, 0, 0, 0.5); 
+  backdrop-filter: blur(5px); 
+}
+
+/* ИСПРАВЛЕНО: Абсолютное центрирование попапа во viewport */
+.modal-content {
+  background-color: #fff;
+  padding: 24px;
+  border-radius: 20px;
+  width: 85%;
+  max-width: 360px; 
+  box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+  
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  
+  animation: popUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes popUp {
+  from { transform: translate(-50%, -40%) scale(0.9); opacity: 0; }
+  to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+
+.close-button {
+  position: absolute;
+  right: 20px;
+  top: 14px;
+  font-size: 32px;
+  font-weight: bold;
+  color: #bbb;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.close-button:hover {
+  color: #222;
+}
+
+.modal-content h2 {
+  margin-top: 0;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #222;
+  border-bottom: 2px solid #f3e5f5;
+  padding-bottom: 10px;
+}
+
+.modal-body p {
+  margin: 14px 0;
+  font-size: 18px;
+  color: #444;
+}
+
+/* Специальные адаптивные правки под мобильные телефоны */
 @media (max-width: 480px) {
   body {
-    padding: 5px;
+    padding: 8px;
   }
-  #calendarGrid {
+  .calendar-container {
+    padding: 12px;
+  }
+  .calendar-header {
+    margin-bottom: 12px;
+  }
+  .calendar-grid {
     gap: 2px;
-    height: calc(100vh - 90px);
+    grid-auto-rows: minmax(70px, 11vh); /* Чуть более компактные ячейки на смартфонах */
   }
   .event-item {
-    padding: 2px 4px;
-    border-left-width: 2px; /* Чуть тоньше полоска слева на мобилках */
+    padding: 3px 4px;
   }
 }
