@@ -21,6 +21,19 @@
     </div>
   </div>
 
+  <!-- Модальное окно для деталей занятия -->
+<div id="eventModal" class="modal">
+  <div class="modal-content">
+    <span class="close-button">&times;</span>
+    <h2 id="modalTitle">Название занятия</h2>
+    <div class="modal-body">
+      <p>📅 <strong>Дата:</strong> <span id="modalDate"></span></p>
+      <p>🕒 <strong>Начало:</strong> <span id="modalStart"></span></p>
+      <p>⏳ <strong>Конец:</strong> <span id="modalEnd"></span></p>
+    </div>
+  </div>
+</div>
+
   <!-- Подключаем логику JavaScript в самом конце body -->
   <script src="script.js"></script>
 </body>
