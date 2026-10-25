@@ -22,24 +22,21 @@ async function fetchEvents() {
     
     allEvents = [];
     
-    // Читаем строки, пропуская строку №1 с заголовками
     for (let i = 1; i < lines.length; i++) {
       const currentLine = lines[i].trim();
       if (!currentLine) continue;
       
       const cols = currentLine.split(',');
       
-      // Читаем все 5 колонок таблицы
       if (cols.length >= 5) {
         const titleText = clean(cols[0]);
         const typeText = clean(cols[1]).toLowerCase();
-        const rawDate = clean(cols[2]);  // Например: "8.10.2026"
-        const rawStart = clean(cols[3]); // Например: "8:00"
-        const rawEnd = clean(cols[4]);   // Например: "10:00"
+        const rawDate = clean(cols[2]); 
+        const rawStart = clean(cols[3]); 
+        const rawEnd = clean(cols[4]);   
         
         if (!titleText || !rawDate) continue;
         
-        // Преобразуем дату из "8.10.2026" в "2026-10-08" для календаря
         const dateParts = rawDate.split('.');
         if (dateParts.length !== 3) continue;
         const day = dateParts[0].padStart(2, '0');
@@ -47,17 +44,17 @@ async function fetchEvents() {
         const year = dateParts[2];
         const formattedDate = `${year}-${month}-${day}`;
         
-        // Стандартизируем время (добавляем нули), чтобы сортировка работала идеально
         const startTime = formatTime(rawStart);
         const endTime = formatTime(rawEnd);
         
         const isRent = typeText === 'аренда';
         
         allEvents.push({
+          id: `event-${i}-${Date.now()}`, // Уникальный ID для каждого события
           title: titleText,
           start: formattedDate, 
-          time: startTime,      // Время начала (сохранено в памяти)
-          endTime: endTime,     // Время конца (сохранено в памяти)
+          time: startTime,      
+          endTime: endTime,     
           isRent: isRent
         });
       }
@@ -101,7 +98,6 @@ function renderCalendar() {
   for (let day = 1; day <= totalDays; day++) {
     const currentFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    // Фильтруем события по дате и СОРТИРУЕМ по времени начала, чтобы они шли по порядку
     const dayEvents = allEvents
       .filter(e => e.start === currentFullDate)
       .sort((a, b) => a.time.localeCompare(b.time)); 
@@ -110,14 +106,13 @@ function renderCalendar() {
     dayEvents.forEach(ev => {
       let badgeStyle = '';
       if (ev.isRent) {
-        badgeStyle = 'background: #ffebee; color: #c62828; border-left: 3px solid #d32f2f;';
+        badgeStyle = 'background: #ffebee; color: #c62828; border-left: 3px solid #d32f2f; cursor: pointer;';
       } else {
-        badgeStyle = 'background: #f3e5f5; color: #4a148c; border-left: 3px solid #7b1fa2;';
+        badgeStyle = 'background: #f3e5f5; color: #4a148c; border-left: 3px solid #7b1fa2; cursor: pointer;';
       }
 
-      // Выводим ТОЛЬКО название. Время сохранено внутри объекта ev, но здесь не пишется.
-      // При наведении мышки (в title) время всё же покажется всплывашкой — это удобно для проверки.
-      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.time}-${ev.endTime} ${ev.title}">
+      // Добавили onclick функцию, передающую ID события, и курсор-указатель
+      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.time}-${ev.endTime} ${ev.title}" onclick="openEventModal('${ev.id}')">
         ${ev.title}
       </div>`;
     });
@@ -131,9 +126,31 @@ function renderCalendar() {
   }
 }
 
+// Функция открытия модального окна
+function openEventModal(eventId) {
+  const event = allEvents.find(e => e.id === eventId);
+  if (!event) return;
+
+  // Красиво переворачиваем дату обратно для показа пользователю (из YYYY-MM-DD в ДД.ММ.ГГГГ)
+  const [year, month, day] = event.start.split('-');
+  const humanDate = `${day}.${month}.${year}`;
+
+  // Подставляем данные в окошко
+  document.getElementById('modalTitle').innerText = event.title;
+  document.getElementById('modalDate').innerText = humanDate;
+  document.getElementById('modalStart').innerText = event.time;
+  document.getElementById('modalEnd').innerText = event.endTime;
+
+  // Показываем окно с флекс-выравниванием
+  const modal = document.getElementById('eventModal');
+  modal.style.display = 'flex';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
+  const modal = document.getElementById('eventModal');
+  const closeBtn = document.querySelector('.close-button');
 
   if (prevBtn) {
     prevBtn.addEventListener('click', () => {
@@ -148,6 +165,20 @@ document.addEventListener('DOMContentLoaded', () => {
       renderCalendar();
     });
   }
+
+  // Закрытие окна при клике на крестик
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => {
+      modal.style.display = 'none';
+    });
+  }
+
+  // Закрытие окна при клике на любое пустое место экрана вокруг окошка
+  window.addEventListener('click', (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+    }
+  });
 });
 
 fetchEvents();
