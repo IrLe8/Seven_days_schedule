@@ -7,51 +7,57 @@ let currentDate = new Date(); // Хранит текущий просматри�
 // Вспомогательная функция очистки текста от кавычек Google Таблиц и невидимых символов \r
 const clean = str => str ? str.replace(/^"|"$/g, '').replace(/\r/g, '').trim() : '';
 
+// Функция приведения времени "8:00" -> "08:00"
+const formatTime = timeStr => {
+  if (!timeStr || !timeStr.includes(':')) return '00:00';
+  const [hours, minutes] = timeStr.split(':');
+  return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+};
+
 async function fetchEvents() {
   try {
-    // Добавляем к ссылке случайный параметр против жесткого кэширования браузером
     const response = await fetch(`${csvUrl}&_cb=${Date.now()}`);
     const text = await response.text();
-    
-    // Делим строки с учетом возможных символов \r\n
     const lines = text.split('\n');
     
     allEvents = [];
     
-    // Читаем строки, пропуская строку №1 с заголовками (title, type, start, end)
+    // Читаем строки, пропуская строку №1 с заголовками
     for (let i = 1; i < lines.length; i++) {
       const currentLine = lines[i].trim();
       if (!currentLine) continue;
       
       const cols = currentLine.split(',');
       
-      // Проверяем, что в строке есть хотя бы название и дата
-      if (cols.length >= 3) {
+      // Теперь у нас 5 колонок (индексы 0, 1, 2, 3, 4)
+      if (cols.length >= 5) {
         const titleText = clean(cols[0]);
-        const typeText = clean(cols[1]).toLowerCase(); // Переводим в нижний регистр для надежности проверки
-        const rawStart = clean(cols[2]); // Получаем строку, например "2026-10-28 8:00" или "2026-10-28 14:30"
+        const typeText = clean(cols[1]).toLowerCase();
+        const rawDate = clean(cols[2]);  // Например: "8.10.2026"
+        const rawStart = clean(cols[3]); // Например: "8:00"
+        const rawEnd = clean(cols[4]);   // Например: "10:00"
         
-        // Если названия нет — просто пропускаем эту строку
-        if (!titleText) continue;
+        if (!titleText || !rawDate) continue;
         
-        // Разделяем по ПРОБЕЛУ на составляющие: дату и время
-        const dateTimeParts = rawStart.split(' ');
-        const datePart = dateTimeParts[0]; // YYYY-MM-DD
-        let timePart = dateTimeParts[1] || '00:00'; // HH:MM
+        // Преобразуем дату из "8.10.2026" в "2026-10-08" для корректной фильтрации в календаре
+        const dateParts = rawDate.split('.');
+        if (dateParts.length !== 3) continue;
+        const day = dateParts[0].padStart(2, '0');
+        const month = dateParts[1].padStart(2, '0');
+        const year = dateParts[2];
+        const formattedDate = `${year}-${month}-${day}`; // Получаем "2026-10-08"
         
-        // Приводим время к красивому формату "08:00" вместо "8:00", чтобы сортировка работала корректно
-        if (timePart && timePart.includes(':')) {
-          const [hours, minutes] = timePart.split(':');
-          timePart = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
-        }
+        // Форматируем время начала и конца (добавляем ведущие нули)
+        const startTime = formatTime(rawStart);
+        const endTime = formatTime(rawEnd);
         
-        // Проверяем тип события для окрашивания
         const isRent = typeText === 'аренда';
         
         allEvents.push({
           title: titleText,
-          start: datePart, // Для фильтрации по дням
-          time: timePart,  // Для сортировки по времени внутри дня
+          start: formattedDate, 
+          time: startTime,      // Для сортировки и вывода
+          endTime: endTime,     // Для вывода красивого диапазона
           isRent: isRent
         });
       }
@@ -67,9 +73,8 @@ function renderCalendar() {
   const grid = document.getElementById('calendarGrid');
   const title = document.getElementById('monthTitle');
   
-  if (!grid || !title) return; // Защита от ошибок, если элементы еще не созданы
-  
-  grid.innerHTML = ''; // Очищаем сетку
+  if (!grid || !title) return; 
+  grid.innerHTML = ''; 
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -89,36 +94,31 @@ function renderCalendar() {
   const startOffset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; 
   const totalDays = new Date(year, month + 1, 0).getDate(); 
 
-  // Отрисовка дней прошлого месяца (пустые ячейки)
   for (let i = 0; i < startOffset; i++) {
     grid.innerHTML += `<div class="day-cell empty"></div>`;
   }
 
-  // Отрисовка дней текущего месяца
   for (let day = 1; day <= totalDays; day++) {
-    // Собираем дату в формате YYYY-MM-DD для сравнения (с ведущими нулями)
     const currentFullDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     
-    // Ищем события, у которых дата совпадает с днем календаря, и СОРТИРУЕМ их по времени
     const dayEvents = allEvents
       .filter(e => e.start === currentFullDate)
-      .sort((a, b) => a.time.localeCompare(b.time)); // Сортировка от раннего к позднему
+      .sort((a, b) => a.time.localeCompare(b.time)); 
     
     let eventsHTML = '';
     dayEvents.forEach(ev => {
-      // Определяем цвет плашки и текста в зависимости от статуса аренды
       let badgeStyle = '';
       if (ev.isRent) {
-        // Красный стиль для аренды
         badgeStyle = 'background: #ffebee; color: #c62828; border-left: 3px solid #d32f2f;';
       } else {
-        // Фиолетовый стиль для пустых ячеек
         badgeStyle = 'background: #f3e5f5; color: #4a148c; border-left: 3px solid #7b1fa2;';
       }
 
-      // Выводим время и название события на плашке
-      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.time} ${ev.title}">
-        <strong>${ev.time}</strong> ${ev.title}
+      // Формируем текст времени в формате "08:00-10:00"
+      const timeRange = `${ev.time}-${ev.endTime}`;
+
+      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${timeRange} ${ev.title}">
+        <strong>${timeRange}</strong> ${ev.title}
       </div>`;
     });
 
@@ -131,7 +131,6 @@ function renderCalendar() {
   }
 }
 
-// Навешиваем события только после проверки существования элементов в DOM
 document.addEventListener('DOMContentLoaded', () => {
   const prevBtn = document.getElementById('prevBtn');
   const nextBtn = document.getElementById('nextBtn');
