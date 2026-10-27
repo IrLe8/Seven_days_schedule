@@ -104,15 +104,10 @@ function renderCalendar() {
     
     let eventsHTML = '';
     dayEvents.forEach(ev => {
-      let badgeStyle = '';
-      if (ev.isRent) {
-        badgeStyle = 'background: #ffebee; color: #c62828; border-left: 3px solid #d32f2f; cursor: pointer;';
-      } else {
-        badgeStyle = 'background: #f3e5f5; color: #4a148c; border-left: 3px solid #7b1fa2; cursor: pointer;';
-      }
+      let badgeClass = ev.isRent ? 'event-item event-red' : 'event-item event-purple';
 
-      // Добавили onclick функцию, передающую ID события, и курсор-указатель
-      eventsHTML += `<div class="event-item" style="${badgeStyle}" title="${ev.time}-${ev.endTime} ${ev.title}" onclick="openEventModal('${ev.id}')">
+      // Передаем уникальный ID события в функцию клика
+      eventsHTML += `<div class="${badgeClass}" title="${ev.title}" onclick="openEventModal('${ev.id}')">
         ${ev.title}
       </div>`;
     });
@@ -131,16 +126,22 @@ function openEventModal(eventId) {
   const event = allEvents.find(e => e.id === eventId);
   if (!event) return;
 
-  // Переворачиваем дату обратно для показа (из YYYY-MM-DD в ДД.ММ.ГГГГ)
+  // Преобразуем дату обратно в ДД.ММ.ГГГГ для отображения
   const [year, month, day] = event.start.split('-');
   const humanDate = `${day}.${month}.${year}`;
 
-  // Подставляем данные в окошко
+  // Подставляем данные в окно
   document.getElementById('modalTitle').innerText = event.title;
   document.getElementById('modalDate').innerText = humanDate;
-  
-  // Формируем красивую строку времени "08:00 - 10:00"
   document.getElementById('modalTimeRange').innerText = `${event.time} - ${event.endTime}`;
+
+  // Меняем цвет шапки в зависимости от типа события
+  const modalHeader = document.getElementById('modalHeader');
+  if (event.isRent) {
+    modalHeader.className = 'modal-header style-rent';
+  } else {
+    modalHeader.className = 'modal-header style-purple';
+  }
 
   // Показываем окно
   const modal = document.getElementById('eventModal');
@@ -167,14 +168,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Закрытие окна при клике на крестик
   if (closeBtn) {
     closeBtn.addEventListener('click', () => {
       modal.style.display = 'none';
     });
   }
 
-  // Закрытие окна при клике на любое пустое место экрана вокруг окошка
   window.addEventListener('click', (e) => {
     if (e.target === modal) {
       modal.style.display = 'none';
