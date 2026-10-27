@@ -4,10 +4,12 @@ const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7D
 let allEvents = [];
 let currentDate = new Date(); // Хранит текущий просматриваемый месяц
 
-// Вспомогательная функция очистки текста от кавычек Google Таблиц и невидимых символов \r
+// Переменные для отслеживания текущего открытого списка событий
+let currentModalEvents = [];
+let currentModalIndex = 0;
+
 const clean = str => str ? str.replace(/^"|"$/g, '').replace(/\r/g, '').trim() : '';
 
-// Функция приведения времени "8:00" -> "08:00" для корректной сортировки
 const formatTime = timeStr => {
   if (!timeStr || !timeStr.includes(':')) return '00:00';
   const [hours, minutes] = timeStr.split(':');
@@ -50,7 +52,7 @@ async function fetchEvents() {
         const isRent = typeText === 'аренда';
         
         allEvents.push({
-          id: `event-${i}-${Date.now()}`, // Уникальный ID для каждого события
+          id: `event-${i}-${Date.now()}`,
           title: titleText,
           start: formattedDate, 
           time: startTime,      
@@ -105,9 +107,7 @@ function renderCalendar() {
     let eventsHTML = '';
     dayEvents.forEach(ev => {
       let badgeClass = ev.isRent ? 'event-item event-red' : 'event-item event-purple';
-
-      // Передаем уникальный ID события в функцию клика
-      eventsHTML += `<div class="${badgeClass}" title="${ev.title}" onclick="openEventModal('${ev.id}')">
+      eventsHTML += `<div class="${badgeClass}" title="${ev.title}" onclick="openEventModal('${ev.id}', '${currentFullDate}')">
         ${ev.title}
       </div>`;
     });
@@ -121,21 +121,35 @@ function renderCalendar() {
   }
 }
 
-// Функция открытия модального окна
-function openEventModal(eventId) {
-  const event = allEvents.find(e => e.id === eventId);
+// Открытие окна с учетом контекста всего дня
+function openEventModal(eventId, dateString) {
+  // Находим и сортируем все события этого дня
+  currentModalEvents = allEvents
+    .filter(e => e.start === dateString)
+    .sort((a, b) => a.time.localeCompare(b.time));
+    
+  currentModalIndex = currentModalEvents.findIndex(e => e.id === eventId);
+  
+  if (currentModalIndex === -1) return;
+  
+  updateModalContent();
+  
+  const modal = document.getElementById('eventModal');
+  modal.style.display = 'block'; 
+}
+
+// Обновление контента внутри окна при листании
+function updateModalContent() {
+  const event = currentModalEvents[currentModalIndex];
   if (!event) return;
 
-  // Преобразуем дату обратно в ДД.ММ.ГГГГ для отображения
   const [year, month, day] = event.start.split('-');
   const humanDate = `${day}.${month}.${year}`;
 
-  // Подставляем данные в окно
   document.getElementById('modalTitle').innerText = event.title;
   document.getElementById('modalDate').innerText = humanDate;
   document.getElementById('modalTimeRange').innerText = `${event.time} - ${event.endTime}`;
 
-  // Меняем цвет шапки в зависимости от типа события
   const modalHeader = document.getElementById('modalHeader');
   if (event.isRent) {
     modalHeader.className = 'modal-header style-rent';
@@ -143,9 +157,14 @@ function openEventModal(eventId) {
     modalHeader.className = 'modal-header style-purple';
   }
 
-  // Показываем окно
-  const modal = document.getElementById('eventModal');
-  modal.style.display = 'block'; 
+  // Скрываем или показываем стрелки в зависимости от количества событий
+  const prevArrow = document.getElementById('modalPrevBtn');
+  const nextArrow = document.getElementById('modalNextBtn');
+  
+  if (prevArrow && nextArrow) {
+    prevArrow.style.visibility = currentModalIndex > 0 ? 'visible' : 'hidden';
+    nextArrow.style.visibility = currentModalIndex < currentModalEvents.length - 1 ? 'visible' : 'hidden';
+  }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -153,24 +172,30 @@ document.addEventListener('DOMContentLoaded', () => {
   const nextBtn = document.getElementById('nextBtn');
   const modal = document.getElementById('eventModal');
   const closeBtn = document.querySelector('.close-button');
+  const prevArrow = document.getElementById('modalPrevBtn');
+  const nextArrow = document.getElementById('modalNextBtn');
 
-  if (prevBtn) {
-    prevBtn.addEventListener('click', () => {
-      currentDate.setMonth(currentDate.getMonth() - 1);
-      renderCalendar();
+  if (prevBtn) prevBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderCalendar(); });
+  if (nextBtn) nextBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
+  if (closeBtn) closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
+
+  // Клик на стрелочку "Назад" внутри модального окна
+  if (prevArrow) {
+    prevArrow.addEventListener('click', () => {
+      if (currentModalIndex > 0) {
+        currentModalIndex--;
+        updateModalContent();
+      }
     });
   }
 
-  if (nextBtn) {
-    nextBtn.addEventListener('click', () => {
-      currentDate.setMonth(currentDate.getMonth() + 1);
-      renderCalendar();
-    });
-  }
-
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
+  // Клик на стрелочку "Вперед" внутри модального окна
+  if (nextArrow) {
+    nextArrow.addEventListener('click', () => {
+      if (currentModalIndex < currentModalEvents.length - 1) {
+        currentModalIndex++;
+        updateModalContent();
+      }
     });
   }
 
