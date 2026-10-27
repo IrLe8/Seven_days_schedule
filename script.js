@@ -1,6 +1,5 @@
 // 1. Вставьте сюда вашу ссылку на CSV из Google Таблиц
-const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?gid=590384500&single=true&output=csv"; 
-
+const csvUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS0kuJR4SlQqXz7Dwoi9FB9_EY3htkgkF-dYnrtZ-3fwRXsgozUOGoDowse7cYenNfFHSU9YV2FEVkZ/pub?gid=590384500&single=true&output=csv";
 let allEvents = [];
 let currentDate = new Date(); // Хранит текущий просматриваемый месяц
 
@@ -123,7 +122,6 @@ function renderCalendar() {
 
 // Открытие окна с учетом контекста всего дня
 function openEventModal(eventId, dateString) {
-  // Находим и сортируем все события этого дня
   currentModalEvents = allEvents
     .filter(e => e.start === dateString)
     .sort((a, b) => a.time.localeCompare(b.time));
@@ -157,13 +155,30 @@ function updateModalContent() {
     modalHeader.className = 'modal-header style-purple';
   }
 
-  // Скрываем или показываем стрелки в зависимости от количества событий
+  // ИСПРАВЛЕНО: Вместо скрытия меняем прозрачность и активность кнопок
   const prevArrow = document.getElementById('modalPrevBtn');
   const nextArrow = document.getElementById('modalNextBtn');
   
   if (prevArrow && nextArrow) {
-    prevArrow.style.visibility = currentModalIndex > 0 ? 'visible' : 'hidden';
-    nextArrow.style.visibility = currentModalIndex < currentModalEvents.length - 1 ? 'visible' : 'hidden';
+    if (currentModalIndex > 0) {
+      prevArrow.disabled = false;
+      prevArrow.style.opacity = '1';
+      prevArrow.style.pointerEvents = 'auto';
+    } else {
+      prevArrow.disabled = true;
+      prevArrow.style.opacity = '0.2'; // Делаем блеклой
+      prevArrow.style.pointerEvents = 'none'; // Запрещаем клики
+    }
+
+    if (currentModalIndex < currentModalEvents.length - 1) {
+      nextArrow.disabled = false;
+      nextArrow.style.opacity = '1';
+      nextArrow.style.pointerEvents = 'auto';
+    } else {
+      nextArrow.disabled = true;
+      nextArrow.style.opacity = '0.2'; // Делаем блеклой
+      nextArrow.style.pointerEvents = 'none'; // Запрещаем клики
+    }
   }
 }
 
@@ -179,9 +194,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (nextBtn) nextBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderCalendar(); });
   if (closeBtn) closeBtn.addEventListener('click', () => { modal.style.display = 'none'; });
 
-  // Клик на стрелочку "Назад" внутри модального окна
   if (prevArrow) {
-    prevArrow.addEventListener('click', () => {
+    prevArrow.addEventListener('click', (e) => {
+      e.stopPropagation(); // Защита от всплытия клика
       if (currentModalIndex > 0) {
         currentModalIndex--;
         updateModalContent();
@@ -189,9 +204,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Клик на стрелочку "Вперед" внутри модального окна
   if (nextArrow) {
-    nextArrow.addEventListener('click', () => {
+    nextArrow.addEventListener('click', (e) => {
+      e.stopPropagation(); // Защита от всплытия клика
       if (currentModalIndex < currentModalEvents.length - 1) {
         currentModalIndex++;
         updateModalContent();
@@ -199,11 +214,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  window.addEventListener('click', (e) => {
-    if (e.target === modal) {
-      modal.style.display = 'none';
-    }
-  });
+  // ИСПРАВЛЕНО: удален обработчик window клика по серой вуали, 
+  // чтобы окно случайно не закрывалось при быстром тапе по стрелкам.
 });
 
 fetchEvents();
