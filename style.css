@@ -81,15 +81,14 @@ body {
   justify-content: flex-start;
   min-width: 0; 
   overflow: hidden;
-  position: relative; /* Важно для позиционирования индикатора прокрутки */
+  position: relative;
 }
 
-/* Дни, которые относятся к прошлому или следующему месяцу */
 .day-cell.empty {
   background: #fafafa;
 }
 
-/* ИСПРАВЛЕНО: Магический индикатор прокрутки с заметной дымкой и стрелочкой */
+/* Магический индикатор прокрутки с заметной дымкой и стрелочкой */
 .day-cell::after {
   content: '▼';
   font-size: 9px;
@@ -98,26 +97,17 @@ body {
   align-items: flex-end;
   justify-content: center;
   padding-bottom: 2px;
-  
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
-  height: 28px; /* Сделали дымку выше и заметнее */
-  
-  /* Плотный градиент для гарантированного перекрытия букв */
-  background: linear-gradient(to bottom, 
-    rgba(255, 255, 255, 0) 0%, 
-    rgba(255, 255, 255, 0.7) 40%, 
-    rgba(255, 255, 255, 1) 100%
-  );
-  
-  pointer-events: none; /* Чтобы градиент не мешал кликать по плашкам */
+  height: 28px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.7) 40%, rgba(255, 255, 255, 1) 100%);
+  pointer-events: none;
   z-index: 2;
   box-sizing: border-box;
 }
 
-/* Для пустых ячеек адаптируем градиент под их серый фон, а стрелочку убираем */
 .day-cell.empty::after {
   content: '';
   background: linear-gradient(to bottom, rgba(250, 250, 250, 0) 0%, rgba(250, 250, 250, 1) 100%);
@@ -130,15 +120,13 @@ body {
   font-size: calc(11px + 0.3vw);
 }
 
-/* Контейнер списка событий (скроллбар скрыт) */
 .event-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex-grow: 1;
   overflow-y: auto;
-  padding-bottom: 16px; /* Чуть увеличили отступ, чтобы текст уходил точно под глубокую дымку */
-  
+  padding-bottom: 16px;
   scrollbar-width: none; 
   -ms-overflow-style: none;  
 }
@@ -147,7 +135,6 @@ body {
   display: none; 
 }
 
-/* Базовый класс плашки события со стандартным отображением и переносом текста */
 .event-item {
   font-size: calc(10px + 0.2vw);
   padding: 4px 6px;
@@ -155,28 +142,25 @@ body {
   cursor: pointer;
   box-sizing: border-box;
   width: 100%;
-  
-  white-space: normal; /* Разрешаем стандартный перенос слов */
-  word-wrap: break-word; /* Переносим длинные слова по буквам, если не помещаются */
+  white-space: normal;
+  word-wrap: break-word;
   overflow: visible;
   text-overflow: clip;
 }
 
-/* Фиолетовый стиль для обычных событий */
 .event-item.event-purple {
   background: #f3e5f5;
   color: #4a148c;
   border-left: 3px solid #7b1fa2;
 }
 
-/* Красный стиль для аренды */
 .event-item.event-red {
   background: #ffebee;
   color: #c62828;
   border-left: 3px solid #d32f2f;
 }
 
-/* Стили для модального окна */
+/* Модальное окно */
 .modal {
   display: none; 
   position: fixed; 
@@ -200,7 +184,6 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
   animation: popUp 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  overflow: hidden;
 }
 
 @keyframes popUp {
@@ -208,30 +191,56 @@ body {
   to { transform: translate(-50%, -50%) scale(1); opacity: 1; }
 }
 
-/* Контейнер для цветной шапки попапа */
+/* Стили для боковых навигационных стрелок попапа */
+.modal-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #e0e0e0;
+  font-size: 28px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  color: #555;
+  transition: all 0.2s;
+}
+
+.modal-arrow:hover {
+  background: #f5f5f5;
+  color: #000;
+}
+
+.arrow-left {
+  left: -55px; /* Выносим стрелку за пределы окна на ПК */
+}
+
+.arrow-right {
+  right: -55px; /* Выносим стрелку за пределы окна на ПК */
+}
+
 .modal-header {
   padding: 20px 24px 16px 24px;
   position: relative;
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
 }
 
 .modal-header h2 {
   margin: 0;
   font-size: 24px;
   line-height: 1.2;
+  padding-right: 20px; /* Чтобы длинное название не наплывало на крестик */
 }
 
-/* Варианты расцветки шапки попапа */
-.modal-header.style-purple {
-  background: #f3e5f5;
-  color: #4a148c;
-  border-bottom: 2px solid #7b1fa2;
-}
-
-.modal-header.style-rent {
-  background: #ffebee;
-  color: #c62828;
-  border-bottom: 2px solid #d32f2f;
-}
+.modal-header.style-purple { background: #f3e5f5; color: #4a148c; border-bottom: 2px solid #7b1fa2; }
+.modal-header.style-rent { background: #ffebee; color: #c62828; border-bottom: 2px solid #d32f2f; }
 
 .close-button {
   position: absolute;
@@ -244,36 +253,25 @@ body {
   line-height: 1;
 }
 
-.close-button:hover {
-  opacity: 1;
-}
+.close-button:hover { opacity: 1; }
+.modal-body { padding: 16px 24px 24px 24px; }
+.modal-body p { margin: 14px 0; font-size: 18px; color: #444; }
 
-.modal-body {
-  padding: 16px 24px 24px 24px;
-}
-
-.modal-body p {
-  margin: 14px 0;
-  font-size: 18px;
-  color: #444;
-}
-
-/* Адаптивность под мобильные */
+/* Адаптивность для мобильных экранов: прячем стрелки внутрь */
 @media (max-width: 480px) {
-  body {
-    padding: 8px;
-  }
-  .calendar-container {
-    padding: 12px;
-  }
-  .calendar-header {
-    margin-bottom: 12px;
-  }
-  .calendar-grid {
-    gap: 2px;
-    grid-auto-rows: minmax(70px, 11vh);
-  }
-  .event-item {
-    padding: 3px 4px;
+  body { padding: 8px; }
+  .calendar-container { padding: 12px; }
+  .calendar-header { margin-bottom: 12px; }
+  .calendar-grid { gap: 2px; grid-auto-rows: minmax(70px, 11vh); }
+  .event-item { padding: 3px 4px; }
+  
+  /* На смартфонах переносим стрелки внутрь карточки, чтобы они поместились в экран */
+  .arrow-left { left: 10px; }
+  .arrow-right { right: 10px; }
+  .modal-arrow {
+    background: rgba(255, 255, 255, 0.95);
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
   }
 }
