@@ -21,9 +21,12 @@
     </div>
   </div>
 
-  <!-- Модальное окно для деталей занятия -->
+  <!-- Модальное окно для деталей занятия со стрелочками прокрутки -->
   <div id="eventModal" class="modal">
     <div class="modal-content">
+      <!-- Стрелка влево -->
+      <button id="modalPrevBtn" class="modal-arrow arrow-left">&#8249;</button>
+      
       <div id="modalHeader" class="modal-header">
         <span class="close-button">&times;</span>
         <h2 id="modalTitle">Название занятия</h2>
@@ -32,9 +35,12 @@
         <p><strong>Дата:</strong> <span id="modalDate"></span></p>
         <p><strong>Время:</strong> <span id="modalTimeRange"></span></p>
       </div>
+      
+      <!-- Стрелка вправо -->
+      <button id="modalNextBtn" class="modal-arrow arrow-right">&#8250;</button>
     </div>
   </div>
-
+  
   <!-- Подключаем логику JavaScript в самом конце body -->
   <script src="script.js"></script>
 </body>
