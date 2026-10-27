@@ -96,16 +96,23 @@ body {
   font-size: calc(11px + 0.3vw);
 }
 
-/* Контейнер списка событий */
+/* Контейнер списка событий с поддержкой скролла без отображения полосы прокрутки */
 .event-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
   flex-grow: 1;
   overflow-y: auto;
+  
+  scrollbar-width: none; /* Для Firefox */
+  -ms-overflow-style: none;  /* Для Internet Explorer/Edge */
 }
 
-/* Базовый класс плашки события с многоточием */
+.event-list::-webkit-scrollbar {
+  display: none; /* Для Chrome, Safari и Opera */
+}
+
+/* Базовый класс плашки события со стандартным отображением и переносом текста */
 .event-item {
   font-size: calc(10px + 0.2vw);
   padding: 4px 6px;
@@ -113,9 +120,11 @@ body {
   cursor: pointer;
   box-sizing: border-box;
   width: 100%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  
+  white-space: normal; /* Разрешаем стандартный перенос слов */
+  word-wrap: break-word; /* Переносим длинные слова по буквам, если не помещаются */
+  overflow: visible;
+  text-overflow: clip;
 }
 
 /* Фиолетовый стиль для обычных событий */
